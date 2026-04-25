@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQLi Sentinel - ML Service</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 800px;
+            width: 90%;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+        
+        .status {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 5px;
+        }
+        
+        .status-online {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .model-loaded {
+            background: #cce5ff;
+            color: #004085;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+        }
+        
+        .test-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .code-input {
+            width: 100%;
+            height: 150px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            margin-bottom: 15px;
+        }
+        
+        .code-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .result {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .result.show {
+            display: block;
+        }
+        
+        .result-vulnerable {
+            border-left: 5px solid #dc3545;
+        }
+        
+        .result-safe {
+            border-left: 5px solid #28a745;
+        }
+        
+        .result h4 {
+            margin-bottom: 10px;
+        }
+        
+        .result-vulnerable h4 {
+            color: #dc3545;
+        }
+        
+        .result-safe h4 {
+            color: #28a745;
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .metric {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .metric-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ SQLi Sentinel</h1>
+            <p>AI-Powered SQL Injection Detection</p>
+        </div>
+        
+        <div class="status">
+            <div id="service-status">
+                <span class="status-badge status-online">🟢 Service Online</span>
+                <span class="status-badge model-loaded">🤖 CodeBERT Model Loaded</span>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔍 Test JavaScript Code</h3>
+            <textarea id="code-input" class="code-input" placeholder="Enter JavaScript code to test for SQL injection vulnerabilities..."></textarea>
+            <button id="test-btn" class="btn" onclick="testCode()">Analyze Code</button>
+        </div>
+        
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Analyzing with CodeBERT model...</p>
+        </div>
+        
+        <div id="result" class="result">
+            <h4 id="result-title"></h4>
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-value" id="confidence">-</div>
+                    <div class="metric-label">Confidence</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="vuln-prob">-</div>
+                    <div class="metric-label">Vulnerability Probability</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" id="safe-prob">-</div>
+                    <div class="metric-label">Safe Probability</div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 30px; text-align: center; color: #666;">
+            <p>🚀 Powered by your fine-tuned CodeBERT model (100% accuracy)</p>
+            <p>📊 Trained on 10,000 JavaScript samples</p>
+        </div>
+    </div>
+
+    <script>
+        // Sample code snippets for quick testing
+        const sampleCode = {
+            safe: `const userInput = req.query.id;
+const query = 'SELECT * FROM users WHERE id = ?';
+db.query(query, [userInput], (err, results) => {
+    if (err) throw err;
+    res.json(results);
+});`,
+            vulnerable: `const userInput = req.query.id;
+const query = 'SELECT * FROM users WHERE id = ' + userInput;
+db.query(query, (err, results) => {
+    if (err) throw err;
+    res.json(results);
+});`
+        };
+
+        // Set default sample code
+        document.getElementById('code-input').value = sampleCode.safe;
+
+        async function testCode() {
+            const code = document.getElementById('code-input').value.trim();
+            
+            if (!code) {
+                alert('Please enter some JavaScript code to analyze.');
+                return;
+            }
+
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            const testBtn = document.getElementById('test-btn');
+
+            // Show loading
+            loading.classList.add('show');
+            result.classList.remove('show');
+            testBtn.disabled = true;
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ code: code })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Analysis failed');
+                }
+
+                const data = await response.json();
+                
+                // Hide loading, show result
+                loading.classList.remove('show');
+                result.classList.add('show');
+                testBtn.disabled = false;
+
+                // Update result display
+                const isVulnerable = data.is_vulnerable;
+                const resultTitle = document.getElementById('result-title');
+                const confidence = document.getElementById('confidence');
+                const vulnProb = document.getElementById('vuln-prob');
+                const safeProb = document.getElementById('safe-prob');
+
+                if (isVulnerable) {
+                    result.className = 'result result-vulnerable show';
+                    resultTitle.textContent = '🚨 SQL Injection Vulnerability Detected!';
+                } else {
+                    result.className = 'result result-safe show';
+                    resultTitle.textContent = '✅ Code Appears Safe';
+                }
+
+                confidence.textContent = (data.confidence * 100).toFixed(2) + '%';
+                vulnProb.textContent = (data.vulnerability_probability * 100).toFixed(2) + '%';
+                safeProb.textContent = (data.safe_probability * 100).toFixed(2) + '%';
+
+            } catch (error) {
+                console.error('Error:', error);
+                loading.classList.remove('show');
+                testBtn.disabled = false;
+                alert('Failed to analyze code. Please try again.');
+            }
+        }
+
+        // Check service status on load
+        async function checkStatus() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                
+                if (data.status === 'ok' && data.model_loaded) {
+                    document.getElementById('service-status').innerHTML = `
+                        <span class="status-badge status-online">🟢 Service Online</span>
+                        <span class="status-badge model-loaded">🤖 CodeBERT Model Loaded</span>
+                    `;
+                } else {
+                    document.getElementById('service-status').innerHTML = `
+                        <span class="status-badge" style="background: #f8d7da; color: #721c24;">🔴 Service Issues</span>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('service-status').innerHTML = `
+                    <span class="status-badge" style="background: #f8d7da; color: #721c24;">🔴 Service Offline</span>
+                `;
+            }
+        }
+
+        // Check status when page loads
+        checkStatus();
+    </script>
+</body>
+</html>

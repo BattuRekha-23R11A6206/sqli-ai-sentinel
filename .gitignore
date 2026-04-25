@@ -1,0 +1,37 @@
+# Node
+backend/node_modules/
+frontend/node_modules/
+frontend/build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Env files
+backend/.env
+frontend/.env
+ml-service/.env
+
+# Upload/runtime artifacts
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Python
+ml-service/__pycache__/
+ml-service/.pytest_cache/
+.venv/
+venv/
+
+# Model artifacts (keep out of git)
+ml-service/*.zip
+ml-service/sqli_weightsfromcolab/
+ml-service/model/sqli_codebert_model/
+backend/models/sqli_model/
+*.zip
+*.bin
+*.safetensors
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
