@@ -1,28 +1,24 @@
 import axios from "axios";
 
+const rawApiUrl = process.env.REACT_APP_API_URL || "";
+const API_URL = rawApiUrl.replace(/\/+$/, "").replace(/\/api$/, "");
+
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL,
-  timeout: 30000,
+  baseURL: API_URL,
+  timeout: 120000,
   headers: {
     "Content-Type": "application/json"
   }
 });
 
 export const scanFileApi = async (file) => {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const response = await api.post("/scan/file", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data"
-    }
-  });
-
+  const code = await file.text();
+  const response = await api.post("/predict", { code });
   return response.data;
 };
 
 export const scanCodeApi = async (code, filename = "pasted-code.js") => {
-  const response = await api.post("/scan/code", { code, filename });
+  const response = await api.post("/predict", { code });
   return response.data;
 };
 
