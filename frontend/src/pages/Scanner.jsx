@@ -6,6 +6,7 @@ import { scanCodeApi, scanFileApi } from "../services/api";
 
 const Scanner = () => {
   const [activeTab, setActiveTab] = useState("file");
+  const [mode, setMode] = useState("codebert"); // "codebert" or "llm"
   const [selectedFile, setSelectedFile] = useState(null);
   const [codeInput, setCodeInput] = useState("");
   const [scanResult, setScanResult] = useState(null);
@@ -28,7 +29,7 @@ const Scanner = () => {
           throw new Error("Please choose a .js file before scanning.");
         }
 
-        const data = await scanFileApi(selectedFile);
+        const data = await scanFileApi(selectedFile, mode);
         setScanResult(data);
         return;
       }
@@ -37,7 +38,7 @@ const Scanner = () => {
         throw new Error("Please paste JavaScript code before scanning.");
       }
 
-      const data = await scanCodeApi(codeInput);
+      const data = await scanCodeApi(codeInput, "pasted-code.js", mode);
       setScanResult(data);
     } catch (scanError) {
       setError(scanError?.response?.data?.message || scanError.message || "Scan failed.");
@@ -65,6 +66,35 @@ const Scanner = () => {
             </button>
           </div>
 
+          <div style={{ margin: "14px 0", padding: "12px", background: "rgba(255,255,255,0.05)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", fontSize: "0.9rem" }}>
+              🔍 Detection Engine:
+            </label>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button
+                type="button"
+                className={`btn ${mode === "codebert" ? "primary" : "secondary"}`}
+                style={{ flex: 1, padding: "8px", fontSize: "0.85rem" }}
+                onClick={() => setMode("codebert")}
+              >
+                🤖 CodeBERT Mode
+              </button>
+              <button
+                type="button"
+                className={`btn ${mode === "llm" ? "primary" : "secondary"}`}
+                style={{ flex: 1, padding: "8px", fontSize: "0.85rem" }}
+                onClick={() => setMode("llm")}
+              >
+                🧠 LLM Mode (Groq)
+              </button>
+            </div>
+            <p style={{ margin: "6px 0 0 0", fontSize: "0.75rem", opacity: 0.75 }}>
+              {mode === "codebert"
+                ? "Fast local CodeBERT transformer model for code classification."
+                : "Deep LLM reasoning (Llama 3.3 70B via Groq) to prevent overfitting."}
+            </p>
+          </div>
+
           {activeTab === "file" ? (
             <FileUpload onFileSelect={handleFileSelect} selectedFile={selectedFile} />
           ) : (
@@ -76,15 +106,20 @@ const Scanner = () => {
             />
           )}
 
-          <button className="btn primary full" onClick={handleScan} disabled={loading}>
-            {loading ? "Scanning..." : "Run Scan"}
+          <button className="btn primary full" onClick={handleScan} disabled={loading} style={{ marginTop: "12px" }}>
+            {loading ? "Scanning..." : `Run Scan (${mode === "codebert" ? "CodeBERT" : "LLM"})`}
           </button>
 
           {error ? <p className="error-text">{error}</p> : null}
         </div>
 
         <div className="scanner-panel right">
-          {loading ? <LoadingSpinner /> : <ScanResults result={scanResult} />}
+          {loading ? (
+            <LoadingSpinner
+              mode={mode}
+              message={`Analyzing code with ${mode === "llm" ? "LLM" : "CodeBERT"}...`}
+            />
+          ) : <ScanResults result={scanResult} />}
         </div>
       </section>
     </main>

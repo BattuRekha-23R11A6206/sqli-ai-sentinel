@@ -2,9 +2,9 @@ const axios = require("axios");
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const getPrediction = async (code) => {
+const getPrediction = async (code, mode = "codebert") => {
   const baseUrl = process.env.ML_SERVICE_URL;
-  const timeoutMs = Number(process.env.ML_SERVICE_TIMEOUT_MS || 10000);
+  const timeoutMs = Number(process.env.ML_SERVICE_TIMEOUT_MS || 15000);
   if (!baseUrl) {
     throw new Error("ML_SERVICE_URL is not configured.");
   }
@@ -17,7 +17,7 @@ const getPrediction = async (code) => {
     try {
       const response = await axios.post(
         endpoint,
-        { code },
+        { code, mode },
         {
           timeout: timeoutMs,
           headers: { "Content-Type": "application/json" }

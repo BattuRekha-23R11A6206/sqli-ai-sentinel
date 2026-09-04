@@ -13,6 +13,8 @@ const vulnerabilitySchema = new mongoose.Schema(
     confidence: { type: Number, required: true },
     isVulnerable: { type: Boolean, required: true },
     code: { type: String, required: true },
+    model: { type: String, default: "codebert" },
+    reasoning: { type: String, default: null },
     vulnerabilityDetails: {
       lineNumber: { type: Number, default: 0 },
       vulnerableCode: { type: String, default: "" },
@@ -31,6 +33,7 @@ const scanSchema = new mongoose.Schema({
   totalFunctions: { type: Number, required: true, default: 0 },
   vulnerableCount: { type: Number, required: true, default: 0 },
   vulnerabilities: { type: [vulnerabilitySchema], default: [] },
+  mode: { type: String, default: "codebert" },
   scanDuration: { type: Number, required: true, default: 0 },
   scanDate: { type: Date, default: Date.now },
   status: {

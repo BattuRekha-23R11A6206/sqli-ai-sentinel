@@ -8,9 +8,10 @@ const api = axios.create({
   }
 });
 
-export const scanFileApi = async (file) => {
+export const scanFileApi = async (file, mode = "codebert") => {
   const formData = new FormData();
   formData.append("file", file);
+  formData.append("mode", mode);
 
   const response = await api.post("/scan/file", formData, {
     headers: {
@@ -21,8 +22,8 @@ export const scanFileApi = async (file) => {
   return response.data;
 };
 
-export const scanCodeApi = async (code, filename = "pasted-code.js") => {
-  const response = await api.post("/scan/code", { code, filename });
+export const scanCodeApi = async (code, filename = "pasted-code.js", mode = "codebert") => {
+  const response = await api.post("/scan/code", { code, filename, mode });
   return response.data;
 };
 

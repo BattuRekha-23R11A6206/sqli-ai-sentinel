@@ -4,12 +4,12 @@ const Scan = require("../models/Scan");
 const { extractFunctions } = require("../services/astParser");
 const { getPrediction } = require("../services/mlService");
 
-const analyzeFunctions = async (functions) => {
+const analyzeFunctions = async (functions, mode = "codebert") => {
   const results = [];
   const seen = new Set();
 
   for (const fn of functions) {
-    const prediction = await getPrediction(fn.code);
+    const prediction = await getPrediction(fn.code, mode);
     const mappedLine = fn.absoluteVulnerableLine || fn.startLine;
     const normalizedName = fn.name === "anonymous"
       ? (fn.parentFunctionName || `globalScope@${fn.startLine}`)
@@ -33,6 +33,8 @@ const analyzeFunctions = async (functions) => {
       confidence: Number(prediction.confidence || 0),
       isVulnerable: Boolean(prediction.is_vulnerable),
       code: fn.codeSnippet || fn.code,
+      model: prediction.model || mode,
+      reasoning: prediction.reasoning || null,
       vulnerabilityDetails: {
         lineNumber: mappedLine,
         vulnerableCode: fn.vulnerableCode || "",
@@ -49,8 +51,24 @@ const analyzeFunctions = async (functions) => {
   return results;
 };
 
-const persistScan = async ({ filename, fileSize, totalFunctions, vulnerabilities, scanDuration }) => {
+const persistScan = async ({ filename, fileSize, totalFunctions, vulnerabilities, scanDuration, mode }) => {
   const vulnerableCount = vulnerabilities.filter((item) => item.isVulnerable).length;
+
+  if (require("mongoose").connection.readyState !== 1) {
+    console.warn("Returning scan result without persistence: MongoDB is not connected.");
+    return {
+      _id: new (require("mongoose").Types.ObjectId)(),
+      filename,
+      fileSize,
+      totalFunctions,
+      vulnerableCount,
+      vulnerabilities,
+      mode: mode || "codebert",
+      scanDuration,
+      scanDate: new Date(),
+      status: vulnerableCount > 0 ? "vulnerable" : "clean"
+    };
+  }
 
   const scan = await Scan.create({
     filename,
@@ -58,6 +76,7 @@ const persistScan = async ({ filename, fileSize, totalFunctions, vulnerabilities
     totalFunctions,
     vulnerableCount,
     vulnerabilities,
+    mode: mode || "codebert",
     scanDuration,
     status: vulnerableCount > 0 ? "vulnerable" : "clean"
   });
@@ -73,11 +92,12 @@ const scanFile = async (req, res, next) => {
       return res.status(400).json({ message: "No file uploaded." });
     }
 
+    const mode = req.body.mode || req.query.mode || "codebert";
     uploadedPath = req.file.path;
     const startTime = Date.now();
     const sourceCode = await fs.readFile(uploadedPath, "utf-8");
     const functions = extractFunctions(sourceCode);
-    const vulnerabilities = await analyzeFunctions(functions);
+    const vulnerabilities = await analyzeFunctions(functions, mode);
     const scanDuration = Date.now() - startTime;
 
     const scan = await persistScan({
@@ -85,7 +105,8 @@ const scanFile = async (req, res, next) => {
       fileSize: req.file.size,
       totalFunctions: functions.length,
       vulnerabilities,
-      scanDuration
+      scanDuration,
+      mode
     });
 
     return res.status(200).json(scan);
@@ -104,7 +125,8 @@ const scanFile = async (req, res, next) => {
 
 const scanCode = async (req, res, next) => {
   try {
-    const { code, filename } = req.body;
+    const { code, filename, mode } = req.body;
+    const targetMode = mode || "codebert";
 
     if (!code || typeof code !== "string" || code.trim().length === 0) {
       return res.status(400).json({ message: "Code is required for scanning." });
@@ -112,7 +134,7 @@ const scanCode = async (req, res, next) => {
 
     const startTime = Date.now();
     const functions = extractFunctions(code);
-    const vulnerabilities = await analyzeFunctions(functions);
+    const vulnerabilities = await analyzeFunctions(functions, targetMode);
     const scanDuration = Date.now() - startTime;
 
     const scan = await persistScan({
@@ -120,7 +142,8 @@ const scanCode = async (req, res, next) => {
       fileSize: Buffer.byteLength(code, "utf-8"),
       totalFunctions: functions.length,
       vulnerabilities,
-      scanDuration
+      scanDuration,
+      mode: targetMode
     });
 
     return res.status(200).json(scan);

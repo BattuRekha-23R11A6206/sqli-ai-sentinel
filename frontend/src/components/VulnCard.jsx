@@ -26,9 +26,16 @@ const VulnCard = ({ item }) => {
     >
       <div className="vuln-head">
         <h4>{displayName}</h4>
-        <span className={`badge ${item.isVulnerable ? "danger" : "success"}`}>
-          {item.isVulnerable ? "SQL Injection Detected" : "Safe"}
-        </span>
+        <div>
+          {item.model ? (
+            <span className="badge" style={{ marginRight: "6px", opacity: 0.85, fontSize: "0.75rem" }}>
+              {item.model}
+            </span>
+          ) : null}
+          <span className={`badge ${item.isVulnerable ? "danger" : "success"}`}>
+            {item.isVulnerable ? "SQL Injection Detected" : "Safe"}
+          </span>
+        </div>
       </div>
       <p className="meta">Line {lineNumber} in source file</p>
 
@@ -60,6 +67,12 @@ const VulnCard = ({ item }) => {
       </div>
 
       {vulnerableCode ? <p className="meta">Vulnerable code: {vulnerableCode.trim()}</p> : null}
+
+      {item.reasoning ? (
+        <p className="meta" style={{ marginTop: "8px", color: "#818cf8", fontWeight: "500" }}>
+          💡 <strong>AI Analysis:</strong> {item.reasoning}
+        </p>
+      ) : null}
 
       {item.suggestion ? <p className="meta">Fix: {item.suggestion}</p> : null}
     </article>
