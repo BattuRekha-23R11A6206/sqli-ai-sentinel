@@ -91,7 +91,7 @@ const Scanner = () => {
             <p style={{ margin: "6px 0 0 0", fontSize: "0.75rem", opacity: 0.75 }}>
               {mode === "codebert"
                 ? "Fast local CodeBERT transformer model for code classification."
-                : "Deep LLM reasoning (Llama 3.3 70B via Groq) to prevent overfitting."}
+                : "Deep LLM reasoning (GPT-OSS 120B via Groq) to prevent overfitting."}
             </p>
           </div>
 

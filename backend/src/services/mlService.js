@@ -100,7 +100,7 @@ const callGradioSpace = async (code, options = {}) => {
  */
 const callGroq = async (code, options = {}) => {
   const apiKey = options.groqApiKey || process.env.GROQ_API_KEY || "";
-  const model = options.groqModel || process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+  const model = options.groqModel || process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 
   if (!apiKey) {
     // If no Groq API key is configured, check if a local ML service is running as a fallback
