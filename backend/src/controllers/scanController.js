@@ -34,6 +34,9 @@ const analyzeFunctions = async (functions, mode = "codebert") => {
       isVulnerable: Boolean(prediction.is_vulnerable),
       code: fn.codeSnippet || fn.code,
       model: prediction.model || mode,
+      engine: prediction.engine || prediction.model || mode,
+      fallback: Boolean(prediction.fallback),
+      codebert_available: prediction.codebert_available !== false,
       reasoning: prediction.reasoning || null,
       vulnerabilityDetails: {
         lineNumber: mappedLine,

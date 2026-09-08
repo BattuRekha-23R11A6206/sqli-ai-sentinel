@@ -14,6 +14,9 @@ const vulnerabilitySchema = new mongoose.Schema(
     isVulnerable: { type: Boolean, required: true },
     code: { type: String, required: true },
     model: { type: String, default: "codebert" },
+    engine: { type: String, default: "codebert" },
+    fallback: { type: Boolean, default: false },
+    codebert_available: { type: Boolean, default: true },
     reasoning: { type: String, default: null },
     vulnerabilityDetails: {
       lineNumber: { type: Number, default: 0 },

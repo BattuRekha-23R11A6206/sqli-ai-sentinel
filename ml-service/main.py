@@ -121,13 +121,13 @@ def startup_event() -> None:
     try:
         predictor.load_model()
         model_ready = True
-        print("ML Service startup complete. CodeBERT Loaded Successfully.")
+        print("ML Service startup complete. Fine-tuned CodeBERT Loaded Successfully.")
         print(f"Groq LLM mode status: {'Ready (' + GROQ_MODEL + ')' if groq_ready else 'Disabled (no key)'}")
     except Exception as exc:
         model_ready = False
-        print(f"CodeBERT startup failed: {exc}")
+        print(f"Fine-tuned SQLi CodeBERT model not found; CodeBERT mode disabled. Reason: {exc}")
         if not groq_ready:
-            raise RuntimeError(f"Failed to load model and Groq not available: {exc}") from exc
+            raise RuntimeError(f"Failed to load fine-tuned model and Groq not available: {exc}") from exc
 
 
 @app.get("/")
@@ -165,7 +165,7 @@ def predict_vulnerability(payload: PredictRequest):
 
     try:
         result = predictor.predict(payload.code)
-        result["model"] = "codebert-base"
+        result["model"] = "codebert"
         return result
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
